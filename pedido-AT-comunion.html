@@ -1,0 +1,231 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pedido de Comunión — Abuela Tata</title>
+<style>
+:root{ --bg:#faf7f2; --card:#ffffff; --accent:#1a4d7a; --accent2:#b88b5a; --text:#1f2937; --muted:#6b7280; --badgeFrom:#173c60; --badgeTo:#2f6aa3; }
+*{box-sizing:border-box}
+body{margin:0;font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:960px;margin:20px auto;padding:12px}
+.card{background:var(--card);border:1px solid #e5e7eb;border-radius:18px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+h1{margin:.2em 0}
+label{font-size:14px;color:var(--muted)}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:12px;font-size:16px;background:#fff}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#93c5fd;box-shadow:0 0 0 3px rgba(147,197,253,.35)}
+.grid{display:grid;gap:10px}
+.grid-2{grid-template-columns:1fr 1fr}
+@media(max-width:760px){.grid-2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:separate;border-spacing:0 8px}
+th,td{padding:10px;text-align:left}
+th{font-size:12px;color:var(--muted)}
+tbody tr{background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.06)}
+tbody td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
+tbody td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 16px;border-radius:14px;border:0;cursor:pointer;font-weight:700}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-secondary{background:var(--accent2);color:#fff}
+.btn-neutral{background:#f3f4f6;color:#111827}
+.right{display:flex;justify-content:flex-end;gap:8px}
+.stack{display:grid;gap:10px}
+.total{display:flex;justify-content:space-between;align-items:center;font-weight:800;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.brand-badge{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--badgeFrom),var(--badgeTo));display:grid;place-items:center;color:#fff;font-weight:800;letter-spacing:.5px;box-shadow:0 8px 24px rgba(23,60,96,.25)}
+.note{font-size:13px;color:#6b7280}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="brand-badge">AT</div>
+    <div>
+      <h1>Formulario de Pedido de Comunión — <span id="brandLabel">Abuela Tata</span></h1>
+      <div class="note">© Abuela Tata · Artesanía hecha en España</div>
+    </div>
+  </div>
+
+  <div class="card grid grid-2">
+    <div>
+      <label>Fecha</label>
+      <input id="date" type="date">
+    </div>
+    <div>
+      <label>Tienda / Cliente</label>
+      <input id="client">
+    </div>
+    <div>
+      <label>Contacto</label>
+      <input id="contact">
+    </div>
+    <div>
+      <label>Teléfono</label>
+      <input id="phone">
+    </div>
+    <div>
+      <label>Email</label>
+      <input id="email" type="email">
+    </div>
+    <div class="grid" style="grid-column:1/-1">
+      <label>Observaciones</label>
+      <textarea id="notes" rows="3"></textarea>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div class="right" style="margin-bottom:8px">
+      <button class="btn btn-neutral" id="addRow">+ Añadir modelo</button>
+      <button class="btn btn-neutral" id="clearRows">🧹 Vaciar todo</button>
+    </div>
+    <div style="overflow:auto">
+      <table id="orderTable">
+        <thead>
+          <tr>
+            <th style="width:24%">Modelo / Referencia</th>
+            <th style="width:16%">Color / Variante</th>
+            <th style="width:16%">Talla</th>
+            <th style="width:12%">Cantidad</th>
+            <th style="width:14%">Precio € (opc.)</th>
+            <th style="width:14%">Importe €</th>
+            <th style="width:8%"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="total" style="margin-top:10px">
+      <span>Total estimado</span>
+      <span><span id="totalQty">0</span> uds — <span id="totalAmount">0,00</span> €</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div class="stack">
+      <button class="btn btn-primary" id="sendWhatsApp">Enviar pedido por WhatsApp</button>
+      <button class="btn btn-secondary" id="sendEmail">Enviar pedido por Email</button>
+      <button class="btn btn-neutral" id="downloadPDF">Descargar resumen (PDF)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+(function(BRAND, COLORS, FOOTER){
+  var COMPANY_WHATSAPP = "34621268525"; // sin +
+  var COMPANY_EMAIL = "info@abuelatata.com";
+
+  var brandLabel = document.getElementById('brandLabel');
+  var dateEl = document.getElementById('date');
+  var client = document.getElementById('client');
+  var contact = document.getElementById('contact');
+  var phone = document.getElementById('phone');
+  var email = document.getElementById('email');
+  var notes = document.getElementById('notes');
+
+  var tbody = document.getElementById('tbody');
+  var totalQty = document.getElementById('totalQty');
+  var totalAmount = document.getElementById('totalAmount');
+
+  var addRowBtn = document.getElementById('addRow');
+  var clearRowsBtn = document.getElementById('clearRows');
+  var sendWhatsAppBtn = document.getElementById('sendWhatsApp');
+  var sendEmailBtn = document.getElementById('sendEmail');
+  var downloadPDFBtn = document.getElementById('downloadPDF');
+
+  brandLabel.textContent = BRAND;
+  document.documentElement.style.setProperty('--accent', COLORS.accent);
+  document.documentElement.style.setProperty('--accent2', COLORS.accent2);
+  document.documentElement.style.setProperty('--badgeFrom', COLORS.badgeFrom);
+  document.documentElement.style.setProperty('--badgeTo', COLORS.badgeTo);
+
+  try{
+    var d = new Date();
+    var m = (d.getMonth()+1).toString().padStart(2,'0');
+    var day = d.getDate().toString().padStart(2,'0');
+    dateEl.value = d.getFullYear()+"-"+m+"-"+day;
+  }catch(e){}
+
+  function addRow(defaults){
+    defaults = defaults || {};
+    var tr = document.createElement('tr');
+    function mkInput(value){ var inp = document.createElement('input'); if (value) inp.value = value; return inp; }
+
+    var tdModel = document.createElement('td'); var inpModel = mkInput(defaults.model); tdModel.appendChild(inpModel);
+    var tdVar = document.createElement('td'); var inpVar = mkInput(defaults.variant); tdVar.appendChild(inpVar);
+
+    var tdSize = document.createElement('td'); var selSize = document.createElement('select');
+    var sizes = ["6","7","8","9","10","11","12","13","14","15","16","Otra"];
+    for (var i=0;i<sizes.length;i++){ var op = document.createElement('option'); op.value=sizes[i]; op.textContent=sizes[i]; selSize.appendChild(op); }
+    selSize.value = defaults.size || "10"; tdSize.appendChild(selSize);
+
+    var tdQty = document.createElement('td'); var inpQty = mkInput(defaults.qty); inpQty.type='number'; inpQty.min='0'; inpQty.step='1'; tdQty.appendChild(inpQty);
+    var tdPrice = document.createElement('td'); var inpPrice = mkInput(defaults.price); inpPrice.type='number'; inpPrice.min='0'; inpPrice.step='0.01'; tdPrice.appendChild(inpPrice);
+
+    var tdAmount = document.createElement('td'); var outAmount = document.createElement('div'); outAmount.textContent="0,00"; tdAmount.appendChild(outAmount);
+
+    var tdDel = document.createElement('td'); var delBtn = document.createElement('button'); delBtn.className='btn btn-neutral'; delBtn.textContent='Quitar'; delBtn.style.padding='10px'; delBtn.style.fontSize='14px'; tdDel.appendChild(delBtn);
+
+    function recalc(){ var q=parseFloat(inpQty.value||0); var p=parseFloat(inpPrice.value||0); var amount=(!isNaN(q)&&!isNaN(p))?q*p:0;
+      try{ outAmount.textContent = amount.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}); }catch(e){ outAmount.textContent = (Math.round(amount*100)/100).toFixed(2); }
+      recalcTotals();
+    }
+    inpQty.addEventListener('input', recalc);
+    inpPrice.addEventListener('input', recalc);
+    delBtn.addEventListener('click', function(){ tr.parentNode.removeChild(tr); recalcTotals(); });
+
+    tr.appendChild(tdModel); tr.appendChild(tdVar); tr.appendChild(tdSize); tr.appendChild(tdQty); tr.appendChild(tdPrice); tr.appendChild(tdAmount); tr.appendChild(tdDel);
+    tbody.appendChild(tr);
+  }
+
+  function recalcTotals(){
+    var qty=0, sum=0; var trs = tbody.querySelectorAll('tr');
+    for (var i=0;i<trs.length;i++){ var tr=trs[i];
+      var q = parseFloat(tr.children[3].querySelector('input').value || 0);
+      var p = parseFloat(tr.children[4].querySelector('input').value || 0);
+      if(!isNaN(q)) qty+=q; if(!isNaN(q)&&!isNaN(p)) sum+=q*p;
+    }
+    totalQty.textContent = qty.toString();
+    try{ totalAmount.textContent = sum.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    catch(e){ totalAmount.textContent = (Math.round(sum*100)/100).toFixed(2); }
+  }
+
+  function buildMessage(){
+    function enc(s){ return encodeURIComponent(s||""); }
+    var head = "🧾 *Pedido de Comunión*%0A*Marca:* " + enc(BRAND) + "%0A*Fecha:* " + enc(dateEl.value) + "%0A";
+    var cli  = "*Cliente:* " + enc(client.value) + "%0A*Contacto:* " + enc(contact.value) + "%0A*Tel.:* " + enc(phone.value) + "%0A*Email:* " + enc(email.value) + "%0A";
+    var lines = "%0A*Líneas de pedido:*";
+    var trs = tbody.querySelectorAll('tr');
+    for (var i=0;i<trs.length;i++){ var tr=trs[i];
+      var m=tr.children[0].querySelector('input').value;
+      var v=tr.children[1].querySelector('input').value;
+      var s=tr.children[2].querySelector('select').value;
+      var q=tr.children[3].querySelector('input').value;
+      var p=tr.children[4].querySelector('input').value;
+      if (m || q){ lines += "%0A"+(i+1)+". *Modelo:* "+enc(m||"-")+" | *Var.:* "+enc(v||"-")+" | *Talla:* "+enc(s)+" | *Cant.:* "+enc(q||"0")+(p? " | *Precio:* "+enc(p)+"€":""); }
+    }
+    var tail = "%0A%0A*Total uds:* " + enc(totalQty.textContent) + " | *Importe estimado:* " + enc(totalAmount.textContent) + "€%0A%0A*Observaciones:* %0A" + enc(notes.value) + FOOTER;
+    return head + cli + lines + tail;
+  }
+
+  document.getElementById('addRow').addEventListener('click', function(){ addRow(); });
+  document.getElementById('clearRows').addEventListener('click', function(){ tbody.innerHTML=''; recalcTotals(); });
+  addRow();
+
+  function openUrl(url){ var win = window.open(url, "_blank"); if(!win){ window.location.href = url; } }
+  document.getElementById('sendWhatsApp').addEventListener('click', function(){ openUrl("https://wa.me/" + COMPANY_WHATSAPP + "?text=" + buildMessage()); });
+  document.getElementById('sendEmail').addEventListener('click', function(){
+    var subject = encodeURIComponent("Pedido " + BRAND + " — " + (client.value || "Cliente"));
+    var body = decodeURIComponent(buildMessage().replace(/%0A/g,"\n").replace(/\*/g,""));
+    window.location.href = "mailto:" + COMPANY_EMAIL + "?subject=" + subject + "&body=" + encodeURIComponent(body);
+  });
+  document.getElementById('downloadPDF').addEventListener('click', function(){ window.print(); });
+
+  var stylePrint = document.createElement("style");
+  stylePrint.textContent = "@media print{ .btn, #addRow, #clearRows { display:none !important; } body{ background:white } .card{ box-shadow:none; border:1px solid #ddd } }";
+  document.head.appendChild(stylePrint);
+})
+("Abuela Tata", {"accent":"#b88b5a","accent2":"#8f6a44","badgeFrom":"#b88b5a","badgeTo":"#d8b892"}, "");
+</script>
+</body>
+</html>
